@@ -4,7 +4,6 @@ import { PixelPlotOptions } from './type';
 import { TooltipController } from './components/tooltip';
 import { AxisController } from './components/axis';
 import { BrushZoom } from './interactions/brush-zoom';
-
 /**
  * 像素点绘制图表
  */
@@ -45,6 +44,18 @@ export class PixelPlot extends CanvasPlot<PixelPlotOptions> {
   /** 绘制像素图 */
   protected renderMidCanvas(pixelData: number[]) {
     const { x, y, width, height } = this.pixelBBox;
+
+    // const canvas = this.middleCanvas;
+    // const colormap = (weight) => {
+      // console.log(weight);
+      // if(weight > 0.7) return [255, 0, 0];
+      // else if(0.7 > weight && weight > 0.5) return [255, 255, 0];
+      // else return [0, 255, 255];
+    // };
+    // const normalize = false;
+    // const indices = 
+    // this.kdtree.render(canvas, colormap, false, [1,2,3,4,5,6,7,8,9,10]);
+
     // 像素图数据
     if (size(pixelData)) {
       const ctx = this.middleCanvas.getContext('2d');
@@ -66,7 +77,7 @@ export class PixelPlot extends CanvasPlot<PixelPlotOptions> {
     this.clear();
     this.render();
   }
-
+  
   /**
    * 绑定事件
    */

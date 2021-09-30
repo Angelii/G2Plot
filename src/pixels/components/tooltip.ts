@@ -18,6 +18,7 @@ export class TooltipController extends Controller<ToolOptions> {
   public yCrosshair: Crosshair.Line;
   /** tooltipMarker group */
   public tooltipMarkerGroup: IGroup;
+  public hoverLineGroup: IGroup;
 
   public init(): void {
     // 初始化tooltip
@@ -44,6 +45,7 @@ export class TooltipController extends Controller<ToolOptions> {
    * 只处理是否显示这些组件的逻辑
    */
   public show(point: Point) {
+
     const pixelBBox = this.pixelPlot.pixelBBox;
     const isInBox = isInPixelBBox(point.x, point.y, pixelBBox);
     const { tooltip } = this.pixelPlot.options;
@@ -55,7 +57,6 @@ export class TooltipController extends Controller<ToolOptions> {
         x: point.x - pixelBBox.x,
         y: point.y - pixelBBox.y,
       };
-
       if (tooltip['showContent']) this.showTooltip(point, pixelPoint);
 
       if (tooltip['showCrosshairs']) {
@@ -70,7 +71,7 @@ export class TooltipController extends Controller<ToolOptions> {
         }
       }
 
-      if (tooltip['showMarkers']) this.showCrossMarkers(point);
+      if (tooltip['showMarkers']) this.showCrossMarkers(pixelPoint);
     }
   }
 
@@ -212,6 +213,7 @@ export class TooltipController extends Controller<ToolOptions> {
    * 显示 辅助线标记点
    */
   private showCrossMarkers(point: Point) {
+
     const { options } = this.pixelPlot;
     const markerOption = get(options, ['tooltip', 'marker'], {});
 
@@ -219,8 +221,23 @@ export class TooltipController extends Controller<ToolOptions> {
     if (this.tooltipMarkerGroup) this.tooltipMarkerGroup.destroy();
     this.tooltipMarkerGroup = this.pixelPlot.foregroundCanvas.addGroup();
 
+    if (this.hoverLineGroup) this.hoverLineGroup.destroy();
+    this.hoverLineGroup = this.pixelPlot.foregroundCanvas.addGroup();
+
     // 获取原始 tooltip 数据
     const items = this.getTooltipInfo();
+
+    const res = this.pixelPlot.kdtree.getCrossPoints(point.x, point.y);
+  
+    const polyPoints = res.dataToPoint.map(item=>([item.x, item.y]));
+    this.hoverLineGroup.addShape('polyline', {
+      attrs: {
+        points: polyPoints,
+        stroke: '#1890FF',
+        lineWidth: 2,
+      },
+    });
+    const markerPoint = res.position;
 
     // 绘制 marker
     const defaultMarkerAttrs = {
@@ -233,8 +250,8 @@ export class TooltipController extends Controller<ToolOptions> {
       const attrs = deepMix(
         defaultMarkerAttrs,
         {
-          x: point.x, // item.x
-          y: item.y,
+          x: markerPoint.x, // item.x
+          y: markerPoint.y,
           shadowColor: item['color'],
           fill: item['color'],
         },

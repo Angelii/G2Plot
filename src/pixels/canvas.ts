@@ -1,7 +1,7 @@
 import { Canvas } from '@antv/g-canvas';
 import { getScale } from '@antv/scale';
 import { Scale } from '@antv/g2';
-import { deepMix, clone, uniqueId, debounce } from '@antv/util';
+import { deepMix, clone, uniqueId, debounce, uniq, max, min } from '@antv/util';
 import { getContainerSize, pick } from '../utils';
 import { Axis as AxisOption } from '../types/axis';
 import { AXIS_META_CONFIG_KEYS } from '../constant';
@@ -10,6 +10,7 @@ import { DEFAULT_OPTIONS } from './constant';
 import { getPaddingInfo, changeCanvasSize, setCanvasPosition } from './util/canvas';
 import { getDefaultMetaType } from './util/scale';
 import * as KD from './mock/kdbox';
+import AliTVSTree from './kdtree/index';
 
 /**
  * 基于原生 canvas 绘制的 plot
@@ -40,12 +41,36 @@ export abstract class CanvasPlot<O extends Options> {
   protected pixelData: number[];
   /** brush等交互过滤后的像素图数据 */
   protected filterPixelData: number[];
+  /** kdTree算法 */
+  public kdtree;
 
   constructor(container: string | HTMLElement, options: O) {
     this.container = typeof container === 'string' ? document.getElementById(container) : container;
     this.options = deepMix({}, DEFAULT_OPTIONS, options);
 
     this.init();
+    this.mock();
+  }
+
+  private mock() {
+    const { rawData } = this.options;
+    const allNames = uniq(rawData.map(item=>item.name));
+    const allDate = rawData.map(item=>new Date(item.date).getTime());
+    const allHigh = rawData.map(item=>item.high);
+    ;
+    const top100Names = allNames.slice(0, 100);
+    const data = [];
+    for(let name of top100Names) {
+        const line = rawData.filter(item=>item.name === name);
+        data.push(line);
+    }
+    const XScale = getScale('time');
+    const xScale = new XScale({ range: [50, 1050], min: min(allDate), max: max(allDate)});
+
+    const YScale = getScale('linear');
+    const yScale = new YScale({ range: [50, 550], min: min(allHigh), max: max(allHigh)});
+
+    this.kdtree = new AliTVSTree(data, 'date', 'high', xScale, yScale);
   }
 
   protected init() {
